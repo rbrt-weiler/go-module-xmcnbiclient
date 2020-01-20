@@ -1,6 +1,6 @@
 # Go module xmcnbiclient
 
-xmcnbiclient is a module that interfaces with the Northbound Interface (NBI) of Extreme Management Center (XMC; formerly known as NetSight), the network management solution from Extreme Networks. The module currently provides the following features:
+xmcnbiclient is a Go module that interfaces with the Northbound Interface (NBI) of Extreme Management Center (XMC; formerly known as NetSight), the network management solution from Extreme Networks. The module currently provides the following features:
 
   * Supports HTTP as well as HTTPS access to XMC.
   * Allows setting the TCP port used to connect to XMC to any valid value.
@@ -11,7 +11,7 @@ While the module should be production ready, tests are pending. Use with caution
 
 ## How to use the module
 
-A minimal Go program that uses the module might look as follows.
+`go get gitlab.com/rbrt-weiler/go-module-xmcnbiclient` (or update using the `-u` flag) the module and start coding. A minimal Go program that uses the module might look as follows.
 
 <pre>
 package main
@@ -36,6 +36,10 @@ func main() {
 	os.Exit(0)
 }
 </pre>
+
+## API Documentation
+
+The module is fully commented, so documentation is [available on GoDoc](https://godoc.org/gitlab.com/rbrt-weiler/go-module-xmcnbiclient).
 
 ## Source
 
