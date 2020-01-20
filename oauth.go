@@ -8,10 +8,12 @@ import (
 	"time"
 )
 
+// oAuthHraderElements stores all fields contained in the decoded header part of the raw OAuth token.
 type oAuthHeaderElements struct {
 	Algorithm string `json:"alg"`
 }
 
+// oAuthPayloadElements stores all fields contained in the decoded payload part of the raw OAuth token.
 type oAuthPayloadElements struct {
 	Issuer           string    `json:"iss,omitempty"`
 	Subject          string    `json:"sub,omitempty"`
@@ -26,22 +28,25 @@ type oAuthPayloadElements struct {
 	LongLived        bool      `json:"longLived,omitempty"`
 }
 
+// OAuthToken stores the raw OAuth token returned by XMC as well as the decoded representation.
 type OAuthToken struct {
-	TokenType   string `json:"token_type"`
-	AccessToken string `json:"access_token"`
-	Header      oAuthHeaderElements
-	Payload     oAuthPayloadElements
-	Signature   []byte
+	TokenType string `json:"token_type"`
+	RawToken  string `json:"access_token"`
+	Header    oAuthHeaderElements
+	Payload   oAuthPayloadElements
+	Signature []byte
 }
 
+// String returns the raw OAuth token.
 func (t OAuthToken) String() string {
-	return fmt.Sprintf("%s", t.AccessToken)
+	return fmt.Sprintf("%s", t.RawToken)
 }
 
+// decodeHeader decodes the header part of the raw OAuth token.
 func (t *OAuthToken) decodeHeader() error {
 	var headerElements oAuthHeaderElements
 
-	headerData, headerErr := base64.RawURLEncoding.DecodeString(strings.Split(t.AccessToken, ".")[0])
+	headerData, headerErr := base64.RawURLEncoding.DecodeString(strings.Split(t.RawToken, ".")[0])
 	if headerErr != nil {
 		return headerErr
 	}
@@ -54,10 +59,11 @@ func (t *OAuthToken) decodeHeader() error {
 	return nil
 }
 
+// decodePayload decodes the payload part of the raw OAuth token.
 func (t *OAuthToken) decodePayload() error {
 	var payloadElements oAuthPayloadElements
 
-	payloadData, payloadErr := base64.RawURLEncoding.DecodeString(strings.Split(t.AccessToken, ".")[1])
+	payloadData, payloadErr := base64.RawURLEncoding.DecodeString(strings.Split(t.RawToken, ".")[1])
 	if payloadErr != nil {
 		return payloadErr
 	}
@@ -75,6 +81,7 @@ func (t *OAuthToken) decodePayload() error {
 	return nil
 }
 
+// Decode decodes the raw OAuth token into human usable representations.
 func (t *OAuthToken) Decode() error {
 	headerErr := t.decodeHeader()
 	if headerErr != nil {
@@ -84,7 +91,7 @@ func (t *OAuthToken) Decode() error {
 	if payloadErr != nil {
 		return payloadErr
 	}
-	signature, signatureErr := base64.RawURLEncoding.DecodeString(strings.Split(t.AccessToken, ".")[2])
+	signature, signatureErr := base64.RawURLEncoding.DecodeString(strings.Split(t.RawToken, ".")[2])
 	if signatureErr != nil {
 		return signatureErr
 	}
@@ -93,8 +100,9 @@ func (t *OAuthToken) Decode() error {
 	return nil
 }
 
+// IsValid returns a boolean representing if the token is still valid (true) or not (false).
 func (t *OAuthToken) IsValid() bool {
-	if t.AccessToken == "" {
+	if t.RawToken == "" {
 		return false
 	}
 	if t.Payload.ExpiresAt.Before(time.Now()) {

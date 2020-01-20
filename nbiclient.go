@@ -12,67 +12,92 @@ import (
 )
 
 const (
-	AccessSchemeHTTP  string = "http"
+	// AccessSchemeHTTP is used to define that HTTP shall be used for communication with XMC.
+	AccessSchemeHTTP string = "http"
+	// AccessSchemeHTTPS is used to define that HTTPS shall be used for communication with XMC.
 	AccessSchemeHTTPS string = "https"
-	AuthTypeBasic     string = "basic"
-	AuthTypeOAuth     string = "oauth"
+	// AuthTypeBasic is used to define that basic auth shall be used for authentication with XMC.
+	AuthTypeBasic string = "basic"
+	// AuthTypeOAuth is used to define that OAuth shall be used for authentication with XMC.
+	AuthTypeOAuth string = "oauth"
 )
 
-type Authentication struct {
-	Type   string
+// authentication stores credentials to use when authenticating with XMC.
+type authentication struct {
+	// Type must be set to either AuthTypeBasic or AuthTypeOAuth.
+	Type string
+	// UserID stores the username (basic auth) or client ID (OAuth).
 	UserID string
+	// Secret stores the password (basic auth) or client secret (OAuth).
 	Secret string
 }
 
+// nbiClient encapsulates the actual HTTP client that communicates with XMC. All fields should be treated as read-only; functions are provided where changes shall be possible.
 type nbiClient struct {
-	httpClient     http.Client
-	accessScheme   string
-	httpHost       string
-	httpPort       uint
-	authentication Authentication
-	accessToken    OAuthToken
+	// httpClient is the actual HTTP client. Should not be manipulated directly.
+	httpClient http.Client
+	// UserAgent is transmitted as the User-Agent header with each request.
+	UserAgent string
+	// AccessScheme is used to define whether HTTP or HTTPS shall be used for communication with XMC.
+	AccessScheme string
+	// HTTPHost is the IP or hostname of the XMC server. Should not be manipulated directly.
+	HTTPHost string
+	// HTTPPort is the TCP port where XMC is listening.
+	HTTPPort uint
+	// Authentication stores authentication information.
+	Authentication authentication
+	// AccessToken is used to store the OAuth token when it is used.
+	AccessToken OAuthToken
 }
 
+// New is used to create an usable instance of nbiClient.
+// By default a new instance will use HTTPS to port 8443 with strict certificate checking. The HTTP timeout is set to 5 seconds. Authentication must be set manually before trying to send a query to XMC.
 func New(host string) nbiClient {
 	var c nbiClient
 	c.httpClient = http.Client{}
+	c.UserAgent = fmt.Sprintf("%s/%s", moduleName, moduleVersion)
 	c.UseHTTPS()
-	c.httpHost = host
+	c.HTTPHost = host
 	c.SetPort(8443)
 	c.AllowInsecureHTTPS(false)
 	c.SetTimeout(5)
-	c.UseBasicAuth("root", "abc123")
 	return c
 }
 
+// String returns a usable string reprensentation of a nbiClient instance.
 func (c nbiClient) String() string {
-	return fmt.Sprintf("%s://%s{%s:***}@%s:%d/", c.accessScheme, c.authentication.Type, c.authentication.UserID, c.httpHost, c.httpPort)
+	return fmt.Sprintf("%s://%s{%s:***}@%s:%d/", c.AccessScheme, c.Authentication.Type, c.Authentication.UserID, c.HTTPHost, c.HTTPPort)
 }
 
+// UseHTTP sets the protocol to HTTP for the nbiClient instance.
 func (c *nbiClient) UseHTTP() {
-	c.accessScheme = AccessSchemeHTTP
+	c.AccessScheme = AccessSchemeHTTP
 }
 
+// UseHTTPS sets the protocol to HTTPS for the nbiClient instance.
 func (c *nbiClient) UseHTTPS() {
-	c.accessScheme = AccessSchemeHTTPS
+	c.AccessScheme = AccessSchemeHTTPS
 }
 
-func (c *nbiClient) SetPort(port uint) (bool, error) {
+// SetPort sets the TCP port where XMC is listening for the nbiClient instance.
+func (c *nbiClient) SetPort(port uint) error {
 	if 1 <= port && 65535 >= port {
-		c.httpPort = port
-		return true, nil
+		c.HTTPPort = port
+		return nil
 	}
-	return false, fmt.Errorf("port out of range (1 - 65535)")
+	return fmt.Errorf("port out of range (1 - 65535)")
 }
 
-func (c *nbiClient) SetTimeout(seconds uint) (bool, error) {
+// SetTimeout sets the HTTP timeout in seconds for the nbiClient instance.
+func (c *nbiClient) SetTimeout(seconds uint) error {
 	if 1 <= seconds && 300 >= seconds {
 		c.httpClient.Timeout = time.Second * time.Duration(seconds)
-		return true, nil
+		return nil
 	}
-	return false, fmt.Errorf("timeout out of range (1 - 300)")
+	return fmt.Errorf("timeout out of range (1 - 300)")
 }
 
+// AllowInsecureHTTPS toggles whether strict certificate checking shall be performed or not with HTTPS requests.
 func (c *nbiClient) AllowInsecureHTTPS(allow bool) {
 	httpTransport := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: allow},
@@ -80,51 +105,59 @@ func (c *nbiClient) AllowInsecureHTTPS(allow bool) {
 	c.httpClient.Transport = httpTransport
 }
 
+// UseBasicAuth informs the nbiClient instance to use HTTP Basic Auth along with the provided credentials.
 func (c *nbiClient) UseBasicAuth(username string, password string) {
-	c.authentication = Authentication{Type: AuthTypeBasic, UserID: username, Secret: password}
+	c.Authentication = authentication{Type: AuthTypeBasic, UserID: username, Secret: password}
 }
 
+// UseOAuth informs the nbiClient instance to use OAuth along with the provided credentials.
 func (c *nbiClient) UseOAuth(clientid string, secret string) {
-	c.authentication = Authentication{Type: AuthTypeOAuth, UserID: clientid, Secret: secret}
+	c.Authentication = authentication{Type: AuthTypeOAuth, UserID: clientid, Secret: secret}
 }
 
+// BaseURL returns the base URL the instance of nbiClient uses to contact XMC.
 func (c *nbiClient) BaseURL() string {
-	return fmt.Sprintf("%s://%s:%d", c.accessScheme, c.httpHost, c.httpPort)
+	return fmt.Sprintf("%s://%s:%d", c.AccessScheme, c.HTTPHost, c.HTTPPort)
 }
 
+// TokenURL returns the URL the instance of nbiClient uses for obtaining an OAuth token.
 func (c *nbiClient) TokenURL() string {
 	return fmt.Sprintf("%s/oauth/token/access-token?grant_type=client_credentials", c.BaseURL())
 }
 
+// APIURL returns the URL the instance of nbiClient sends queries to.
 func (c *nbiClient) APIURL() string {
 	return fmt.Sprintf("%s/nbi/graphql", c.BaseURL())
 }
 
+// RetrieveOAuthToken tries to obtain a valid OAuth token from XMC and to decode it.
 func (c *nbiClient) RetrieveOAuthToken() error {
+	// Empty token structure to start with.
 	var tokenData OAuthToken
 
-	if c.authentication.Type != AuthTypeOAuth {
+	// Only continue if OAuth is actually configured.
+	if c.Authentication.Type != AuthTypeOAuth {
 		return fmt.Errorf("auth type not set to OAuth")
 	}
 
 	// Generate an actual HTTP request.
 	req, reqErr := http.NewRequest(http.MethodPost, c.TokenURL(), nil)
 	if reqErr != nil {
-		return fmt.Errorf("could not create HTTPS request: %s", reqErr)
+		return fmt.Errorf("could not create HTTP(S) request: %s", reqErr)
 	}
-	req.Header.Set("User-Agent", httpUserAgent)
+	req.Header.Set("User-Agent", c.UserAgent)
 	req.Header.Set("Cache-Control", "no-cache")
 	req.Header.Set("Accept", jsonMimeType)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.SetBasicAuth(c.authentication.UserID, c.authentication.Secret)
+	req.SetBasicAuth(c.Authentication.UserID, c.Authentication.Secret)
 
 	// Try to get a result from the API.
 	res, resErr := c.httpClient.Do(req)
 	if resErr != nil {
 		return fmt.Errorf("could not connect to XMC: %s", resErr)
 	}
-	if res.StatusCode != 200 {
-		return fmt.Errorf("got status code %d instead of 200", res.StatusCode)
+	if res.StatusCode != http.StatusOK {
+		return fmt.Errorf("got status code %d instead of %d", res.StatusCode, http.StatusOK)
 	}
 	defer res.Body.Close()
 
@@ -144,43 +177,52 @@ func (c *nbiClient) RetrieveOAuthToken() error {
 		return fmt.Errorf("could not read server response: %s", jsonErr)
 	}
 
+	// Decode token data.
 	decodeErr := tokenData.Decode()
 	if decodeErr != nil {
 		return fmt.Errorf("could not decode token: %s", decodeErr)
 	}
 
-	c.accessToken = tokenData
+	// Store the complete token in the client.
+	c.AccessToken = tokenData
 
 	return nil
 }
 
-func (c *nbiClient) OAuthToken() OAuthToken {
-	return c.accessToken
-}
-
+// QueryAPI sends a request to the XMC API and returns the JSON result as a string.
 func (c *nbiClient) QueryAPI(query string) (string, error) {
+	// Only continue if an authentication method has been defined.
+	if c.Authentication.Type == "" {
+		return "", fmt.Errorf("no authentication method defined")
+	}
+
+	// Wrap the query into a JSON object.
 	jsonQuery, jsonQueryErr := json.Marshal(map[string]string{"query": query})
 	if jsonQueryErr != nil {
 		return "", fmt.Errorf("could not encode query into JSON: %s", jsonQueryErr)
 	}
+	// Create an HTTP request.
 	req, reqErr := http.NewRequest(http.MethodPost, c.APIURL(), bytes.NewBuffer(jsonQuery))
 	if reqErr != nil {
 		return "", fmt.Errorf("could not create HTTP(S) request: %s", reqErr)
 	}
-	req.Header.Set("User-Agent", httpUserAgent)
+	// Set some basic request headers.
+	req.Header.Set("User-Agent", c.UserAgent)
 	req.Header.Set("Cache-Control", "no-cache")
 	req.Header.Set("Content-Type", jsonMimeType)
 	req.Header.Set("Accept", jsonMimeType)
-	if c.authentication.Type == AuthTypeOAuth {
-		if c.accessToken.IsValid() != true {
+	// Set the authentication header based on the chosen authentication method.
+	if c.Authentication.Type == AuthTypeOAuth {
+		// If the stored OAuth token is invalid, try to renew it.
+		if c.AccessToken.IsValid() != true {
 			tokenErr := c.RetrieveOAuthToken()
 			if tokenErr != nil {
 				return "", fmt.Errorf("could not retrieve fresh OAuth token: %s", tokenErr)
 			}
 		}
-		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.accessToken.AccessToken))
+		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.AccessToken.RawToken))
 	} else {
-		req.SetBasicAuth(c.authentication.UserID, c.authentication.Secret)
+		req.SetBasicAuth(c.Authentication.UserID, c.Authentication.Secret)
 	}
 
 	// Try to get a result from the API.
@@ -192,13 +234,11 @@ func (c *nbiClient) QueryAPI(query string) (string, error) {
 		return "", fmt.Errorf("Got status code %d instead of 200", res.StatusCode)
 	}
 	defer res.Body.Close()
-
 	// Check if the HTTP response has yielded the expected content type.
 	resContentType := res.Header.Get("Content-Type")
 	if strings.Index(resContentType, jsonMimeType) != 0 {
 		return "", fmt.Errorf("Content-Type %s returned instead of %s", resContentType, jsonMimeType)
 	}
-
 	// Read the body of the HTTP response.
 	body, readErr := ioutil.ReadAll(res.Body)
 	if readErr != nil {
