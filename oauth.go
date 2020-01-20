@@ -8,13 +8,13 @@ import (
 	"time"
 )
 
-// oAuthHraderElements stores all fields contained in the decoded header part of the raw OAuth token.
-type oAuthHeaderElements struct {
+// OAuthHeaderElements stores all fields contained in the decoded header part of the raw OAuth token.
+type OAuthHeaderElements struct {
 	Algorithm string `json:"alg"`
 }
 
-// oAuthPayloadElements stores all fields contained in the decoded payload part of the raw OAuth token.
-type oAuthPayloadElements struct {
+// OAuthPayloadElements stores all fields contained in the decoded payload part of the raw OAuth token.
+type OAuthPayloadElements struct {
 	Issuer           string    `json:"iss,omitempty"`
 	Subject          string    `json:"sub,omitempty"`
 	JWTID            string    `json:"jti,omitempty"`
@@ -32,8 +32,8 @@ type oAuthPayloadElements struct {
 type OAuthToken struct {
 	TokenType string `json:"token_type"`
 	RawToken  string `json:"access_token"`
-	Header    oAuthHeaderElements
-	Payload   oAuthPayloadElements
+	Header    OAuthHeaderElements
+	Payload   OAuthPayloadElements
 	Signature []byte
 }
 
@@ -44,7 +44,7 @@ func (t OAuthToken) String() string {
 
 // decodeHeader decodes the header part of the raw OAuth token.
 func (t *OAuthToken) decodeHeader() error {
-	var headerElements oAuthHeaderElements
+	var headerElements OAuthHeaderElements
 
 	headerData, headerErr := base64.RawURLEncoding.DecodeString(strings.Split(t.RawToken, ".")[0])
 	if headerErr != nil {
@@ -61,7 +61,7 @@ func (t *OAuthToken) decodeHeader() error {
 
 // decodePayload decodes the payload part of the raw OAuth token.
 func (t *OAuthToken) decodePayload() error {
-	var payloadElements oAuthPayloadElements
+	var payloadElements OAuthPayloadElements
 
 	payloadData, payloadErr := base64.RawURLEncoding.DecodeString(strings.Split(t.RawToken, ".")[1])
 	if payloadErr != nil {

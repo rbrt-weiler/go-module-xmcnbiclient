@@ -22,8 +22,8 @@ const (
 	AuthTypeOAuth string = "oauth"
 )
 
-// authentication stores credentials to use when authenticating with XMC.
-type authentication struct {
+// Authentication stores credentials to use when authenticating with XMC.
+type Authentication struct {
 	// Type must be set to either AuthTypeBasic or AuthTypeOAuth.
 	Type string
 	// UserID stores the username (basic auth) or client ID (OAuth).
@@ -32,8 +32,9 @@ type authentication struct {
 	Secret string
 }
 
-// nbiClient encapsulates the actual HTTP client that communicates with XMC. All fields should be treated as read-only; functions are provided where changes shall be possible.
-type nbiClient struct {
+// NBIClient encapsulates the actual HTTP client that communicates with XMC.
+// Use New() to obtain an usable instance. All fields should be treated as read-only; functions are provided where changes shall be possible.
+type NBIClient struct {
 	// httpClient is the actual HTTP client. Should not be manipulated directly.
 	httpClient http.Client
 	// UserAgent is transmitted as the User-Agent header with each request.
@@ -45,15 +46,15 @@ type nbiClient struct {
 	// HTTPPort is the TCP port where XMC is listening.
 	HTTPPort uint
 	// Authentication stores authentication information.
-	Authentication authentication
+	Authentication Authentication
 	// AccessToken is used to store the OAuth token when it is used.
 	AccessToken OAuthToken
 }
 
-// New is used to create an usable instance of nbiClient.
+// New is used to create an usable instance of NBIClient.
 // By default a new instance will use HTTPS to port 8443 with strict certificate checking. The HTTP timeout is set to 5 seconds. Authentication must be set manually before trying to send a query to XMC.
-func New(host string) nbiClient {
-	var c nbiClient
+func New(host string) NBIClient {
+	var c NBIClient
 	c.httpClient = http.Client{}
 	c.UserAgent = fmt.Sprintf("%s/%s", moduleName, moduleVersion)
 	c.UseHTTPS()
@@ -64,23 +65,23 @@ func New(host string) nbiClient {
 	return c
 }
 
-// String returns a usable string reprensentation of a nbiClient instance.
-func (c nbiClient) String() string {
+// String returns a usable string reprensentation of a NBIClient instance.
+func (c NBIClient) String() string {
 	return fmt.Sprintf("%s://%s{%s:***}@%s:%d/", c.AccessScheme, c.Authentication.Type, c.Authentication.UserID, c.HTTPHost, c.HTTPPort)
 }
 
-// UseHTTP sets the protocol to HTTP for the nbiClient instance.
-func (c *nbiClient) UseHTTP() {
+// UseHTTP sets the protocol to HTTP for the NBIClient instance.
+func (c *NBIClient) UseHTTP() {
 	c.AccessScheme = AccessSchemeHTTP
 }
 
-// UseHTTPS sets the protocol to HTTPS for the nbiClient instance.
-func (c *nbiClient) UseHTTPS() {
+// UseHTTPS sets the protocol to HTTPS for the NBIClient instance.
+func (c *NBIClient) UseHTTPS() {
 	c.AccessScheme = AccessSchemeHTTPS
 }
 
-// SetPort sets the TCP port where XMC is listening for the nbiClient instance.
-func (c *nbiClient) SetPort(port uint) error {
+// SetPort sets the TCP port where XMC is listening for the NBIClient instance.
+func (c *NBIClient) SetPort(port uint) error {
 	if 1 <= port && 65535 >= port {
 		c.HTTPPort = port
 		return nil
@@ -88,8 +89,8 @@ func (c *nbiClient) SetPort(port uint) error {
 	return fmt.Errorf("port out of range (1 - 65535)")
 }
 
-// SetTimeout sets the HTTP timeout in seconds for the nbiClient instance.
-func (c *nbiClient) SetTimeout(seconds uint) error {
+// SetTimeout sets the HTTP timeout in seconds for the NBIClient instance.
+func (c *NBIClient) SetTimeout(seconds uint) error {
 	if 1 <= seconds && 300 >= seconds {
 		c.httpClient.Timeout = time.Second * time.Duration(seconds)
 		return nil
@@ -98,40 +99,40 @@ func (c *nbiClient) SetTimeout(seconds uint) error {
 }
 
 // AllowInsecureHTTPS toggles whether strict certificate checking shall be performed or not with HTTPS requests.
-func (c *nbiClient) AllowInsecureHTTPS(allow bool) {
+func (c *NBIClient) AllowInsecureHTTPS(allow bool) {
 	httpTransport := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: allow},
 	}
 	c.httpClient.Transport = httpTransport
 }
 
-// UseBasicAuth informs the nbiClient instance to use HTTP Basic Auth along with the provided credentials.
-func (c *nbiClient) UseBasicAuth(username string, password string) {
-	c.Authentication = authentication{Type: AuthTypeBasic, UserID: username, Secret: password}
+// UseBasicAuth informs the NBIClient instance to use HTTP Basic Auth along with the provided credentials.
+func (c *NBIClient) UseBasicAuth(username string, password string) {
+	c.Authentication = Authentication{Type: AuthTypeBasic, UserID: username, Secret: password}
 }
 
-// UseOAuth informs the nbiClient instance to use OAuth along with the provided credentials.
-func (c *nbiClient) UseOAuth(clientid string, secret string) {
-	c.Authentication = authentication{Type: AuthTypeOAuth, UserID: clientid, Secret: secret}
+// UseOAuth informs the NBIClient instance to use OAuth along with the provided credentials.
+func (c *NBIClient) UseOAuth(clientid string, secret string) {
+	c.Authentication = Authentication{Type: AuthTypeOAuth, UserID: clientid, Secret: secret}
 }
 
-// BaseURL returns the base URL the instance of nbiClient uses to contact XMC.
-func (c *nbiClient) BaseURL() string {
+// BaseURL returns the base URL the instance of NBIClient uses to contact XMC.
+func (c *NBIClient) BaseURL() string {
 	return fmt.Sprintf("%s://%s:%d", c.AccessScheme, c.HTTPHost, c.HTTPPort)
 }
 
-// TokenURL returns the URL the instance of nbiClient uses for obtaining an OAuth token.
-func (c *nbiClient) TokenURL() string {
+// TokenURL returns the URL the instance of NBIClient uses for obtaining an OAuth token.
+func (c *NBIClient) TokenURL() string {
 	return fmt.Sprintf("%s/oauth/token/access-token?grant_type=client_credentials", c.BaseURL())
 }
 
-// APIURL returns the URL the instance of nbiClient sends queries to.
-func (c *nbiClient) APIURL() string {
+// APIURL returns the URL the instance of NBIClient sends queries to.
+func (c *NBIClient) APIURL() string {
 	return fmt.Sprintf("%s/nbi/graphql", c.BaseURL())
 }
 
 // RetrieveOAuthToken tries to obtain a valid OAuth token from XMC and to decode it.
-func (c *nbiClient) RetrieveOAuthToken() error {
+func (c *NBIClient) RetrieveOAuthToken() error {
 	// Empty token structure to start with.
 	var tokenData OAuthToken
 
@@ -190,7 +191,7 @@ func (c *nbiClient) RetrieveOAuthToken() error {
 }
 
 // QueryAPI sends a request to the XMC API and returns the JSON result as a string.
-func (c *nbiClient) QueryAPI(query string) (string, error) {
+func (c *NBIClient) QueryAPI(query string) (string, error) {
 	// Only continue if an authentication method has been defined.
 	if c.Authentication.Type == "" {
 		return "", fmt.Errorf("no authentication method defined")
