@@ -3,18 +3,19 @@ package xmcnbiclient
 import (
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
 	"strings"
 	"time"
 )
 
 // OAuthHeaderElements stores all fields contained in the decoded header part of the raw OAuth token.
 type OAuthHeaderElements struct {
+	RawHeader string `json:"-"`
 	Algorithm string `json:"alg"`
 }
 
 // OAuthPayloadElements stores all fields contained in the decoded payload part of the raw OAuth token.
 type OAuthPayloadElements struct {
+	RawPayload       string    `json:"-"`
 	Issuer           string    `json:"iss,omitempty"`
 	Subject          string    `json:"sub,omitempty"`
 	JWTID            string    `json:"jti,omitempty"`
@@ -37,16 +38,27 @@ type OAuthToken struct {
 	Signature []byte
 }
 
+// String returns the raw header part of the OAuth token.
+func (he OAuthHeaderElements) String() string {
+	return he.RawHeader
+}
+
+// String returns the raw payload part of the OAuth token.
+func (pe OAuthPayloadElements) String() string {
+	return pe.RawPayload
+}
+
 // String returns the raw OAuth token.
 func (t OAuthToken) String() string {
-	return fmt.Sprintf("%s", t.RawToken)
+	return t.RawToken
 }
 
 // decodeHeader decodes the header part of the raw OAuth token.
 func (t *OAuthToken) decodeHeader() error {
 	var headerElements OAuthHeaderElements
 
-	headerData, headerErr := base64.RawURLEncoding.DecodeString(strings.Split(t.RawToken, ".")[0])
+	rawHeader := strings.Split(t.RawToken, ".")[0]
+	headerData, headerErr := base64.RawURLEncoding.DecodeString(rawHeader)
 	if headerErr != nil {
 		return headerErr
 	}
@@ -54,6 +66,7 @@ func (t *OAuthToken) decodeHeader() error {
 	if decodeErr != nil {
 		return decodeErr
 	}
+	t.Header.RawHeader = rawHeader
 	t.Header = headerElements
 
 	return nil
@@ -63,7 +76,8 @@ func (t *OAuthToken) decodeHeader() error {
 func (t *OAuthToken) decodePayload() error {
 	var payloadElements OAuthPayloadElements
 
-	payloadData, payloadErr := base64.RawURLEncoding.DecodeString(strings.Split(t.RawToken, ".")[1])
+	rawPayload := strings.Split(t.RawToken, ".")[1]
+	payloadData, payloadErr := base64.RawURLEncoding.DecodeString(rawPayload)
 	if payloadErr != nil {
 		return payloadErr
 	}

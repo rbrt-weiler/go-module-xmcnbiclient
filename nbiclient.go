@@ -56,7 +56,7 @@ type NBIClient struct {
 func New(host string) NBIClient {
 	var c NBIClient
 	c.httpClient = http.Client{}
-	c.UserAgent = fmt.Sprintf("%s/%s", moduleName, moduleVersion)
+	c.SetUserAgent(fmt.Sprintf("%s/%s", moduleName, moduleVersion))
 	c.UseHTTPS()
 	c.HTTPHost = host
 	c.SetPort(8443)
