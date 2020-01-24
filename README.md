@@ -26,7 +26,7 @@ import (
 func main() {
 	client := xmcnbiclient.New("localhost")
 	client.UseBasicAuth("root", "abc123")
-	client.AllowInsecureHTTPS(true)
+	client.UseInsecureHTTPS()
 	res, err := client.QueryAPI("query { network { devices { up ip sysName nickName } } }")
 	if err != nil {
 		fmt.Printf("Oops: %s", err)
