@@ -98,10 +98,18 @@ func (c *NBIClient) SetTimeout(seconds uint) error {
 	return fmt.Errorf("timeout out of range (1 - 300)")
 }
 
-// AllowInsecureHTTPS toggles whether strict certificate checking shall be performed or not with HTTPS requests.
-func (c *NBIClient) AllowInsecureHTTPS(allow bool) {
+// UseSecureHTTPS enforces strict HTTPS certificate checking.
+func (c *NBIClient) UseSecureHTTPS() {
 	httpTransport := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: allow},
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: false},
+	}
+	c.httpClient.Transport = httpTransport
+}
+
+// UseInsecureHTTPS disables strict HTTPS certificate checking.
+func (c *NBIClient) UseInsecureHTTPS() {
+	httpTransport := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
 	c.httpClient.Transport = httpTransport
 }
