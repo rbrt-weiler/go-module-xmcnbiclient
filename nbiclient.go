@@ -45,6 +45,8 @@ type NBIClient struct {
 	HTTPHost string
 	// HTTPPort is the TCP port where XMC is listening.
 	HTTPPort uint
+	// BasePath is the path where XMC is available on HTTPHost.
+	BasePath string
 	// Authentication stores authentication information.
 	Authentication Authentication
 	// AccessToken is used to store the OAuth token when it is used.
@@ -60,6 +62,7 @@ func New(host string) NBIClient {
 	c.UseHTTPS()
 	c.HTTPHost = host
 	c.SetPort(8443)
+	c.SetBasePath("")
 	c.UseSecureHTTPS()
 	c.SetTimeout(5)
 	return c
@@ -104,6 +107,11 @@ func (c *NBIClient) SetPort(port uint) error {
 	return fmt.Errorf("port out of range (1 - 65535)")
 }
 
+// SetBasePath sets the path where XMC is available on the host.
+func (c *NBIClient) SetBasePath(path string) {
+	c.BasePath = path
+}
+
 // SetTimeout sets the HTTP timeout in seconds for the NBIClient instance.
 func (c *NBIClient) SetTimeout(seconds uint) error {
 	if httpMinTimeout <= seconds && httpMaxTimeout >= seconds {
@@ -141,7 +149,7 @@ func (c *NBIClient) UseOAuth(clientid string, secret string) {
 
 // BaseURL returns the base URL the instance of NBIClient uses to contact XMC.
 func (c *NBIClient) BaseURL() string {
-	return fmt.Sprintf("%s://%s:%d", c.AccessScheme, c.HTTPHost, c.HTTPPort)
+	return fmt.Sprintf("%s://%s:%d%s", c.AccessScheme, c.HTTPHost, c.HTTPPort, c.BasePath)
 }
 
 // TokenURL returns the URL the instance of NBIClient uses for obtaining an OAuth token.
