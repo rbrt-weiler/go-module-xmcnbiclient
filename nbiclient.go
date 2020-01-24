@@ -65,9 +65,19 @@ func New(host string) NBIClient {
 	return c
 }
 
+// String returns a compact representation of the authentication method and values with a masked secret.
+func (a Authentication) String() string {
+	return fmt.Sprintf("%s{%s:%s}", a.Type, a.UserID, "***")
+}
+
+// StringWithSecret returns a compact representation of the authentication method and values with the plain text secret.
+func (a Authentication) StringWithSecret() string {
+	return fmt.Sprintf("%s{%s:%s}", a.Type, a.UserID, a.Secret)
+}
+
 // String returns a usable string reprensentation of a NBIClient instance.
 func (c NBIClient) String() string {
-	return fmt.Sprintf("%s://%s{%s:***}@%s:%d/", c.AccessScheme, c.Authentication.Type, c.Authentication.UserID, c.HTTPHost, c.HTTPPort)
+	return fmt.Sprintf("%s://%s@%s:%d/", c.AccessScheme, c.Authentication, c.HTTPHost, c.HTTPPort)
 }
 
 // SetUserAgent sets the User-Agent HTTP header.
