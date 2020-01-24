@@ -60,7 +60,7 @@ func New(host string) NBIClient {
 	c.UseHTTPS()
 	c.HTTPHost = host
 	c.SetPort(8443)
-	c.AllowInsecureHTTPS(false)
+	c.UseSecureHTTPS()
 	c.SetTimeout(5)
 	return c
 }
@@ -68,6 +68,11 @@ func New(host string) NBIClient {
 // String returns a usable string reprensentation of a NBIClient instance.
 func (c NBIClient) String() string {
 	return fmt.Sprintf("%s://%s{%s:***}@%s:%d/", c.AccessScheme, c.Authentication.Type, c.Authentication.UserID, c.HTTPHost, c.HTTPPort)
+}
+
+// SetUserAgent sets the User-Agent HTTP header.
+func (c *NBIClient) SetUserAgent(ua string) {
+	c.UserAgent = ua
 }
 
 // UseHTTP sets the protocol to HTTP for the NBIClient instance.
