@@ -97,7 +97,7 @@ func (c *NBIClient) UseHTTPS() {
 
 // SetPort sets the TCP port where XMC is listening for the NBIClient instance.
 func (c *NBIClient) SetPort(port uint) error {
-	if 1 <= port && 65535 >= port {
+	if httpMinPort <= port && httpMaxPort >= port {
 		c.HTTPPort = port
 		return nil
 	}
@@ -106,7 +106,7 @@ func (c *NBIClient) SetPort(port uint) error {
 
 // SetTimeout sets the HTTP timeout in seconds for the NBIClient instance.
 func (c *NBIClient) SetTimeout(seconds uint) error {
-	if 1 <= seconds && 300 >= seconds {
+	if httpMinTimeout <= seconds && httpMaxTimeout >= seconds {
 		c.httpClient.Timeout = time.Second * time.Duration(seconds)
 		return nil
 	}
