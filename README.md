@@ -32,7 +32,7 @@ func main() {
 		fmt.Printf("Oops: %s", err)
 		os.Exit(255)
 	}
-	fmt.Println(res)
+	fmt.Println(string(res))
 	os.Exit(0)
 }
 </pre>

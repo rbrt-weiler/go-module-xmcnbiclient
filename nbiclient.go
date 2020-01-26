@@ -222,21 +222,23 @@ func (c *NBIClient) RetrieveOAuthToken() error {
 }
 
 // QueryAPI sends a request to the XMC API and returns the JSON result as a string.
-func (c *NBIClient) QueryAPI(query string) (string, error) {
+func (c *NBIClient) QueryAPI(query string) ([]byte, error) {
+	var rval []byte
+
 	// Only continue if an authentication method has been defined.
 	if c.Authentication.Type == "" {
-		return "", fmt.Errorf("no authentication method defined")
+		return rval, fmt.Errorf("no authentication method defined")
 	}
 
 	// Wrap the query into a JSON object.
 	jsonQuery, jsonQueryErr := json.Marshal(map[string]string{"query": query})
 	if jsonQueryErr != nil {
-		return "", fmt.Errorf("could not encode query into JSON: %s", jsonQueryErr)
+		return rval, fmt.Errorf("could not encode query into JSON: %s", jsonQueryErr)
 	}
 	// Create an HTTP request.
 	req, reqErr := http.NewRequest(http.MethodPost, c.APIURL(), bytes.NewBuffer(jsonQuery))
 	if reqErr != nil {
-		return "", fmt.Errorf("could not create HTTP(S) request: %s", reqErr)
+		return rval, fmt.Errorf("could not create HTTP(S) request: %s", reqErr)
 	}
 	// Set some basic request headers.
 	req.Header.Set("User-Agent", c.UserAgent)
@@ -249,7 +251,7 @@ func (c *NBIClient) QueryAPI(query string) (string, error) {
 		if c.AccessToken.IsValid() != true {
 			tokenErr := c.RetrieveOAuthToken()
 			if tokenErr != nil {
-				return "", fmt.Errorf("could not retrieve fresh OAuth token: %s", tokenErr)
+				return rval, fmt.Errorf("could not retrieve fresh OAuth token: %s", tokenErr)
 			}
 		}
 		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.AccessToken.RawToken))
@@ -260,22 +262,22 @@ func (c *NBIClient) QueryAPI(query string) (string, error) {
 	// Try to get a result from the API.
 	res, resErr := c.httpClient.Do(req)
 	if resErr != nil {
-		return "", fmt.Errorf("Could not connect to XMC: %s", resErr)
+		return rval, fmt.Errorf("Could not connect to XMC: %s", resErr)
 	}
 	if res.StatusCode != 200 {
-		return "", fmt.Errorf("Got status code %d instead of 200", res.StatusCode)
+		return rval, fmt.Errorf("Got status code %d instead of 200", res.StatusCode)
 	}
 	defer res.Body.Close()
 	// Check if the HTTP response has yielded the expected content type.
 	resContentType := res.Header.Get("Content-Type")
 	if strings.Index(resContentType, jsonMimeType) != 0 {
-		return "", fmt.Errorf("Content-Type %s returned instead of %s", resContentType, jsonMimeType)
+		return rval, fmt.Errorf("Content-Type %s returned instead of %s", resContentType, jsonMimeType)
 	}
 	// Read the body of the HTTP response.
 	body, readErr := ioutil.ReadAll(res.Body)
 	if readErr != nil {
-		return "", fmt.Errorf("Could not read server response: %s", readErr)
+		return rval, fmt.Errorf("Could not read server response: %s", readErr)
 	}
 
-	return string(body), nil
+	return body, nil
 }

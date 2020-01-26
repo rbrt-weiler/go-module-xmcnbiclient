@@ -4,7 +4,7 @@ package xmcnbiclient
 
 const (
 	moduleName     string = "go-module-xmcnbiclient"
-	moduleVersion  string = "0.4.0"
+	moduleVersion  string = "0.5.0"
 	jsonMimeType   string = "application/json"
 	httpMinPort    uint   = 1
 	httpMaxPort    uint   = 65535
