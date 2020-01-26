@@ -221,7 +221,7 @@ func (c *NBIClient) RetrieveOAuthToken() error {
 	return nil
 }
 
-// QueryAPI sends a request to the XMC API and returns the JSON result as a string.
+// QueryAPI sends a request to the XMC API and returns the JSON result as a byte array.
 func (c *NBIClient) QueryAPI(query string) ([]byte, error) {
 	var rval []byte
 
