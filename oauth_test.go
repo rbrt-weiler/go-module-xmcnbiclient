@@ -3,6 +3,7 @@ package xmcnbiclient
 import (
 	"fmt"
 	"testing"
+	"time"
 )
 
 const (
@@ -60,5 +61,17 @@ func TestIsValid(t *testing.T) {
 	var o OAuthToken
 	if o.IsValid() {
 		t.Errorf("IsValid() returned true for an empty token")
+	}
+}
+
+func TestExpiresSoon(t *testing.T) {
+	var o OAuthToken
+	o.RawToken = testToken
+	decodeErr := o.Decode()
+	if decodeErr != nil {
+		t.Errorf("Decode() could not decode test token: %s", decodeErr)
+	}
+	if !o.ExpiresSoon(0) {
+		t.Errorf("ExpiresSoon() returned false for an expired token (now %s, exp %s)", time.Now(), o.Payload.ExpiresAt)
 	}
 }
