@@ -27,8 +27,11 @@ const (
 		  "longLived": false
 		}
 	*/
-	testTokenPayload   string = "ewogICJpc3MiOiAiZm9vYmFyLmV4YW1wbGUuY29tIiwKICAic3ViIjogIlhNQyIsCiAgImp0aSI6ICJmb28xMjNiYXIiLAogICJyb2xlcyI6IFsKICAgICJmb28iLAogICAgImJhciIKICBdLAogICJpYXQiOiAxNTc5NTM1MDAwLAogICJuYmYiOiAxNTc5NTM1MTAwLAogICJleHAiOiAxNTc5NTM1MjAwLAogICJsb25nTGl2ZWQiOiBmYWxzZQp9"
-	testTokenSignature string = "nonefoobarnone"
+	testTokenPayload string = "ewogICJpc3MiOiAiZm9vYmFyLmV4YW1wbGUuY29tIiwKICAic3ViIjogIlhNQyIsCiAgImp0aSI6ICJmb28xMjNiYXIiLAogICJyb2xlcyI6IFsKICAgICJmb28iLAogICAgImJhciIKICBdLAogICJpYXQiOiAxNTc5NTM1MDAwLAogICJuYmYiOiAxNTc5NTM1MTAwLAogICJleHAiOiAxNTc5NTM1MjAwLAogICJsb25nTGl2ZWQiOiBmYWxzZQp9"
+	/*
+		nonefoobarnone
+	*/
+	testTokenSignature string = "bm9uZWZvb2Jhcm5vbmU"
 )
 
 var (
@@ -41,6 +44,15 @@ func TestDecode(t *testing.T) {
 	decodeErr := o.Decode()
 	if decodeErr != nil {
 		t.Errorf("Decode() could not decode test token: %s", decodeErr)
+	}
+	if o.Header.Algorithm != "none" {
+		t.Errorf("Decode() failed for header (alg != none)")
+	}
+	if o.Payload.JWTID != "foo123bar" {
+		t.Errorf("Decode() failed for payload (JWTID != foo123bar)")
+	}
+	if string(o.Signature) != "nonefoobarnone" {
+		t.Errorf("Decode() failed for signature")
 	}
 }
 
