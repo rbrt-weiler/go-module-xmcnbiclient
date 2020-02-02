@@ -128,6 +128,9 @@ func (t *OAuthToken) IsValid() bool {
 // ExpiresSoon returns a boolean representing whether the token will expire soon (true) or not (false).
 // Soon is defined as time.Now() + graceSecs.
 func (t *OAuthToken) ExpiresSoon(graceSecs uint) bool {
+	if t.RawToken == "" {
+		return false
+	}
 	timeSoon := time.Now().Add(time.Second * time.Duration(graceSecs))
 	if t.Payload.ExpiresAt.Before(timeSoon) {
 		return true
