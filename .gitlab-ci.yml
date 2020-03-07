@@ -1,0 +1,62 @@
+image: golang:1.13
+
+
+
+stages:
+  - build
+  - test
+
+
+
+# do not forget to set project variables
+include:
+  - template: SAST.gitlab-ci.yml # GITLAB_FEATURES = "sast"
+  #- template: Code-Quality.gitlab-ci.yml # GITLAB_FEATURES = "code_quality"
+  #- template: Dependency-Scanning.gitlab-ci.yml # GITLAB_FEATURES = "dependency_scanning"
+  #- template: License-Scanning.gitlab-ci.yml # GITLAB_FEATURES = "license_scanning"
+
+variables:
+  SAST_DISABLE_DIND: "true"
+  SAST_GOSEC_LEVEL: 0
+
+
+
+.build_command: &build_command
+- go build ./...
+
+.test_command: &test_command
+- go test ./...
+
+
+
+build-master:
+  stage: build
+  only:
+    - master
+  script:
+    - *build_command
+
+test-master:
+  stage: test
+  only:
+    - master
+  script:
+    - *test_command
+
+
+
+build-not-master:
+  stage: build
+  except:
+    - master
+  script:
+    - *build_command
+  allow_failure: true
+
+test-not-master:
+  stage: test
+  except:
+    - master
+  script:
+    - *test_command
+  allow_failure: true
