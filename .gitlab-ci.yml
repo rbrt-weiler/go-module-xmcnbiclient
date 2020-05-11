@@ -31,15 +31,17 @@ variables:
 
 build-master:
   stage: build
-  only:
-    - master
+  rules:
+    - if: $CI_COMMIT_BRANCH == "master"
+      when: always
   script:
     - *build_command
 
 test-master:
   stage: test
-  only:
-    - master
+  rules:
+    - if: $CI_COMMIT_BRANCH == "master"
+      when: on_success
   script:
     - *test_command
 
@@ -47,16 +49,18 @@ test-master:
 
 build-not-master:
   stage: build
-  except:
-    - master
+  rules:
+    - if: $CI_COMMIT_BRANCH != "master"
+      when: always
+      allow_failure: true
   script:
     - *build_command
-  allow_failure: true
 
 test-not-master:
   stage: test
-  except:
-    - master
+  rules:
+    - if: $CI_COMMIT_BRANCH != "master"
+      when: on_success
+      allow_failure: true
   script:
     - *test_command
-  allow_failure: true
