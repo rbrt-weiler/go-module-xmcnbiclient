@@ -25,7 +25,7 @@ variables:
 - go build ./...
 
 .test_command: &test_command
-- go test ./...
+- go test ./... -coverage
 
 
 
