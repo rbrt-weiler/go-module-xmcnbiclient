@@ -1,3 +1,3 @@
 module gitlab.com/rbrt-weiler/go-module-xmcnbiclient
 
-go 1.13
+go 1.16
