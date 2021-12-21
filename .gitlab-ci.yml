@@ -1,25 +1,29 @@
-image: golang:1.15
+default:
+  image: golang:1.15
+  before_script:
+    - echo "CI for ${TOOL_NAME} commit ID ${CI_COMMIT_SHA}"
+  after_script:
+    - ls -lR .
 
-
+# do not forget to set project variables
+include:
+  - template: Jobs/Code-Quality.gitlab-ci.yml # GITLAB_FEATURES = "code_quality"
+  - template: Security/Dependency-Scanning.gitlab-ci.yml # GITLAB_FEATURES = "dependency_scanning"
+  - template: Security/License-Scanning.gitlab-ci.yml # GITLAB_FEATURES = "license_scanning"
+  - template: Security/SAST.gitlab-ci.yml # GITLAB_FEATURES = "sast"
 
 stages:
   - build
   - test
+  - release
 
 
 
-# do not forget to set project variables
-include:
-  - template: SAST.gitlab-ci.yml # GITLAB_FEATURES = "sast"
-  #- template: Code-Quality.gitlab-ci.yml # GITLAB_FEATURES = "code_quality"
-  #- template: Dependency-Scanning.gitlab-ci.yml # GITLAB_FEATURES = "dependency_scanning"
-  #- template: License-Scanning.gitlab-ci.yml # GITLAB_FEATURES = "license_scanning"
-
-variables:
-  SAST_DISABLE_DIND: "true"
-  SAST_GOSEC_LEVEL: 0
-
-
+.ci-vars:
+  variables:
+    TOOL_NAME: "go-module-xmcnbiclient"
+    SAST_DISABLE_DIND: "true"
+    SAST_GOSEC_LEVEL: 0
 
 .build_command: &build_command
 - go build ./...
@@ -29,9 +33,42 @@ variables:
 
 
 
+build-tagged:
+  stage: build
+  rules:
+    - if: '$CI_COMMIT_TAG'
+      when: always
+  script:
+    - *build_command
+
+test-tagged:
+  stage: test
+  rules:
+    - if: '$CI_COMMIT_TAG'
+      when: on_success
+  script:
+    - *test_command
+
+release-tagged:
+  stage: release
+  rules:
+    - if: '$CI_COMMIT_TAG'
+      when: on_success
+  script:
+    - echo Release
+  release:
+    tag_name: ${CI_COMMIT_TAG}
+    name: '${TOOL_NAME} ${CI_COMMIT_TAG}'
+    ref: ${CI_COMMIT_SHA}
+    description: '${TOOL_NAME} ${CI_COMMIT_TAG} based on commit ID ${CI_COMMIT_SHA}'
+
+
+
 build-master:
   stage: build
   rules:
+    - if: '$CI_COMMIT_TAG'
+      when: never
     - if: $CI_COMMIT_BRANCH == "master"
       when: always
   script:
@@ -40,6 +77,8 @@ build-master:
 test-master:
   stage: test
   rules:
+    - if: '$CI_COMMIT_TAG'
+      when: never
     - if: $CI_COMMIT_BRANCH == "master"
       when: on_success
   script:
@@ -47,18 +86,22 @@ test-master:
 
 
 
-build-not-master:
+build-any:
   stage: build
   rules:
+    - if: '$CI_COMMIT_TAG'
+      when: never
     - if: $CI_COMMIT_BRANCH != "master"
       when: always
       allow_failure: true
   script:
     - *build_command
 
-test-not-master:
+test-any:
   stage: test
   rules:
+    - if: '$CI_COMMIT_TAG'
+      when: never
     - if: $CI_COMMIT_BRANCH != "master"
       when: on_success
       allow_failure: true
