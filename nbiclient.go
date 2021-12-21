@@ -5,7 +5,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -200,7 +200,7 @@ func (c *NBIClient) RetrieveOAuthToken() error {
 	}
 
 	// Read and parse the body of the HTTP response.
-	xmcToken, readErr := ioutil.ReadAll(res.Body)
+	xmcToken, readErr := io.ReadAll(res.Body)
 	if readErr != nil {
 		return fmt.Errorf("could not read server response: %s", readErr)
 	}
@@ -274,7 +274,7 @@ func (c *NBIClient) QueryAPI(query string) ([]byte, error) {
 		return rval, fmt.Errorf("Content-Type %s returned instead of %s", resContentType, jsonMimeType)
 	}
 	// Read the body of the HTTP response.
-	body, readErr := ioutil.ReadAll(res.Body)
+	body, readErr := io.ReadAll(res.Body)
 	if readErr != nil {
 		return rval, fmt.Errorf("Could not read server response: %s", readErr)
 	}
